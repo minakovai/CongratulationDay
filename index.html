@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Congratulation Day</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <h1>🎉 Congratulation Day</h1>
+      <p class="subtitle">Введите имя и получите уникальное поздравление к празднику дня.</p>
+
+      <section class="controls">
+        <label>
+          Имя друга
+          <input id="friendName" type="text" placeholder="Например: Алексей" />
+        </label>
+
+        <label>
+          Страна (для поиска праздника)
+          <select id="countryCode">
+            <option value="RU" selected>Россия</option>
+            <option value="US">США</option>
+            <option value="KZ">Казахстан</option>
+            <option value="BY">Беларусь</option>
+            <option value="UA">Украина</option>
+          </select>
+        </label>
+
+        <label>
+          Режим поздравления
+          <div class="modes" role="radiogroup" aria-label="Режим поздравления">
+            <button class="mode-btn active" data-mode="neutral">Обычный</button>
+            <button class="mode-btn" data-mode="formal">Строгий деловой</button>
+            <button class="mode-btn" data-mode="funny">С юмором</button>
+          </div>
+        </label>
+
+        <details>
+          <summary>Опционально: Kie API key (Gemini через Kie.ai)</summary>
+          <input id="apiKey" type="password" value="efe98c5b3d0a78ebf928db1e3c0734b1" placeholder="kie-..." autocomplete="off" />
+          <p class="hint">Если ключ не указан, будет использован встроенный генератор. Ключ можно сохранить в браузере.</p>
+        </details>
+
+        <div class="actions">
+          <button id="generateBtn" class="primary">Выполнить</button>
+          <button id="regenerateBtn" disabled>Переделать</button>
+        </div>
+      </section>
+
+      <section id="result" class="result hidden" aria-live="polite">
+        <h2 id="resultTitle"></h2>
+        <article id="resultText"></article>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
