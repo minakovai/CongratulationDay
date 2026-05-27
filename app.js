@@ -94,29 +94,33 @@ function templateGreeting({ friendName, holidayName, mode, dateText }) {
   return `${intros[mode].join('\n')}\n\n${body[mode]}\n\n${endings[mode]}`;
 }
 
-async function generateWithOpenAI(context, apiKey) {
+async function generateWithGeminiViaKie(context, apiKey) {
   const prompt = `Сгенерируй поздравление на русском языке в HTML (только содержимое внутри <div>).\nПараметры:\nИмя: ${context.friendName}\nДата: ${context.dateText}\nПраздник: ${context.holidayName}\nСтиль: ${context.modeLabel}\nТребования: 2-3 абзаца, персонально, без банальностей, тёплый тон.`;
 
-  const response = await fetch('https://api.openai.com/v1/responses', {
+  const response = await fetch('https://api.kie.ai/gemini-3.1-pro/v1/chat/completions', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4.1-mini',
-      input: prompt,
-      max_output_tokens: 350,
+      model: 'gemini-3.1-pro',
+      messages: [
+        { role: 'system', content: 'Ты помощник, который пишет красивые поздравления на русском языке в HTML.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.9,
+      max_tokens: 400,
     }),
   });
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(`Ошибка AI-генерации: ${errText}`);
+    throw new Error(`Ошибка Gemini/Kie-генерации: ${errText}`);
   }
 
   const data = await response.json();
-  return data.output_text?.trim();
+  return data.choices?.[0]?.message?.content?.trim();
 }
 
 async function createGreeting(forceRegenerate = false) {
@@ -163,7 +167,7 @@ async function createGreeting(forceRegenerate = false) {
     let greetingHtml = '';
 
     if (apiKey) {
-      greetingHtml = await generateWithOpenAI(lastContext, apiKey);
+      greetingHtml = await generateWithGeminiViaKie(lastContext, apiKey);
     }
 
     if (!greetingHtml) {
