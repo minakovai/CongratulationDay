@@ -9,8 +9,24 @@ const resultText = document.getElementById('resultText');
 
 const modeButtons = Array.from(document.querySelectorAll('.mode-btn'));
 
+const API_KEY_STORAGE_KEY = 'congratulationday.kie_api_key';
+
 let selectedMode = 'neutral';
 let lastContext = null;
+
+const savedApiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+if (savedApiKey) {
+  apiKeyInput.value = savedApiKey;
+}
+
+apiKeyInput.addEventListener('change', () => {
+  const value = apiKeyInput.value.trim();
+  if (value) {
+    localStorage.setItem(API_KEY_STORAGE_KEY, value);
+  } else {
+    localStorage.removeItem(API_KEY_STORAGE_KEY);
+  }
+});
 
 modeButtons.forEach((button) => {
   button.addEventListener('click', (event) => {
@@ -94,6 +110,13 @@ function templateGreeting({ friendName, holidayName, mode, dateText }) {
   return `${intros[mode].join('\n')}\n\n${body[mode]}\n\n${endings[mode]}`;
 }
 
+function normalizeProviderError(rawErrorText) {
+  if (rawErrorText.includes('Incorrect API key provided')) {
+    return 'Kie.ai отклонил ключ. Проверьте, что это API key именно из кабинета Kie.ai (а не ключ другого сервиса).';
+  }
+  return rawErrorText;
+}
+
 async function generateWithGeminiViaKie(context, apiKey) {
   const prompt = `Сгенерируй поздравление на русском языке в HTML (только содержимое внутри <div>).\nПараметры:\nИмя: ${context.friendName}\nДата: ${context.dateText}\nПраздник: ${context.holidayName}\nСтиль: ${context.modeLabel}\nТребования: 2-3 абзаца, персонально, без банальностей, тёплый тон.`;
 
@@ -116,7 +139,7 @@ async function generateWithGeminiViaKie(context, apiKey) {
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(`Ошибка Gemini/Kie-генерации: ${errText}`);
+    throw new Error(normalizeProviderError(errText));
   }
 
   const data = await response.json();
@@ -165,9 +188,14 @@ async function createGreeting(forceRegenerate = false) {
 
     const apiKey = apiKeyInput.value.trim();
     let greetingHtml = '';
+    let aiWarning = '';
 
     if (apiKey) {
-      greetingHtml = await generateWithGeminiViaKie(lastContext, apiKey);
+      try {
+        greetingHtml = await generateWithGeminiViaKie(lastContext, apiKey);
+      } catch (error) {
+        aiWarning = `AI недоступен: ${error.message} Использую встроенный генератор.`;
+      }
     }
 
     if (!greetingHtml) {
@@ -180,6 +208,9 @@ async function createGreeting(forceRegenerate = false) {
 
     const sourceText = lastContext.source === 'online' ? 'Источник: онлайн-календарь праздников.' : 'Источник: резервная база праздников.';
     resultText.innerHTML += `<p class="hint">${sourceText}</p>`;
+    if (aiWarning) {
+      resultText.innerHTML += `<p class="hint">${aiWarning}</p>`;
+    }
   } catch (error) {
     resultTitle.textContent = 'Не удалось сгенерировать поздравление';
     resultText.textContent = error.message;
